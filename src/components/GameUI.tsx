@@ -26,10 +26,11 @@ export default function GameUI() {
     refresh();
   };
 
-  const handleAction = (action: 'cultivate' | 'explore' | 'rest') => {
+  const handleAction = (action: 'cultivate' | 'explore' | 'rest' | 'hunt') => {
     if (action === 'cultivate') gameEngine.cultivate();
     if (action === 'explore') gameEngine.explore();
     if (action === 'rest') gameEngine.rest();
+    if (action === 'hunt') gameEngine.hunt();
     refresh();
   };
 
@@ -114,6 +115,11 @@ export default function GameUI() {
             </div>
 
             <div className="bg-zinc-800/50 p-3 rounded-lg border border-zinc-700/50 flex justify-between items-center">
+                <div className="flex items-center text-zinc-400 text-sm"><Sword className="w-4 h-4 mr-2" /> 战力</div>
+                <div className="font-mono font-bold text-red-400">{state.attributes.combatPower}</div>
+            </div>
+
+            <div className="bg-zinc-800/50 p-3 rounded-lg border border-zinc-700/50 flex justify-between items-center">
                 <div className="flex items-center text-zinc-400 text-sm"><Heart className="w-4 h-4 mr-2" /> 健康</div>
                 <div className="font-mono font-bold text-emerald-400">{state.attributes.health}/{state.attributes.maxHealth}</div>
             </div>
@@ -133,8 +139,17 @@ export default function GameUI() {
             <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-3">魂环配置</h3>
             <div className="space-y-2">
                 {state.spiritRings.length > 0 ? state.spiritRings.map((ring, i) => (
-                    <div key={i} className="text-xs bg-zinc-950 p-2 rounded border border-zinc-800 text-zinc-300">
-                        {ring}
+                    <div key={i} className={cn(
+                        "text-xs p-2 rounded border flex justify-between items-center",
+                        ring.type === 'White' && "bg-zinc-100 text-zinc-900 border-zinc-300",
+                        ring.type === 'Yellow' && "bg-yellow-900/30 text-yellow-200 border-yellow-700/50",
+                        ring.type === 'Purple' && "bg-purple-900/30 text-purple-200 border-purple-700/50",
+                        ring.type === 'Black' && "bg-zinc-900 text-zinc-100 border-zinc-700",
+                        ring.type === 'Red' && "bg-red-900/30 text-red-200 border-red-700/50",
+                        ring.type === 'Gold' && "bg-amber-500/20 text-amber-200 border-amber-500/50"
+                    )}>
+                        <span className="font-bold">{ring.name}</span>
+                        <span className="opacity-70">{ring.age}年</span>
                     </div>
                 )) : <div className="text-xs text-zinc-600 italic">暂无魂环</div>}
             </div>
@@ -142,7 +157,7 @@ export default function GameUI() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col bg-zinc-950 relative">
+      <div className="flex-1 flex flex-col bg-zinc-950 relative h-screen">
         {/* Top Tabs */}
         <div className="flex border-b border-zinc-800 bg-zinc-900/50">
             <button 
@@ -214,7 +229,7 @@ export default function GameUI() {
         </div>
 
         {/* Action Bar */}
-        <div className="p-6 bg-zinc-900 border-t border-zinc-800 grid grid-cols-3 gap-4">
+        <div className="p-6 bg-zinc-900 border-t border-zinc-800 grid grid-cols-4 gap-4">
             <button 
                 onClick={() => handleAction('cultivate')}
                 disabled={!!currentEvent}
@@ -234,6 +249,16 @@ export default function GameUI() {
                     <MapPin className="w-5 h-5" />
                 </div>
                 <span className="text-sm font-medium">探索</span>
+            </button>
+            <button 
+                onClick={() => handleAction('hunt')}
+                disabled={!!currentEvent}
+                className="flex flex-col items-center justify-center p-4 bg-zinc-800 hover:bg-zinc-700 rounded-xl transition-colors disabled:opacity-50"
+            >
+                <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center mb-2 text-red-400">
+                    <Sword className="w-5 h-5" />
+                </div>
+                <span className="text-sm font-medium">猎魂</span>
             </button>
             <button 
                 onClick={() => handleAction('rest')}

@@ -19,6 +19,7 @@ export class GameEngine {
       attributes: {
         spiritPower: 1,
         rank: 1,
+        combatPower: 10,
         health: 100,
         maxHealth: 100,
         wealth: 100,
@@ -48,8 +49,25 @@ export class GameEngine {
     }
   }
 
+  // Calculate combat power based on stats and rings
+  updateCombatPower() {
+    const basePower = this.state.attributes.spiritPower * 10 + this.state.attributes.strength * 2;
+    const ringBonus = this.state.spiritRings.reduce((acc, ring) => {
+        let bonus = 0;
+        if (ring.type === 'White') bonus = 100;
+        if (ring.type === 'Yellow') bonus = 500;
+        if (ring.type === 'Purple') bonus = 2000;
+        if (ring.type === 'Black') bonus = 10000;
+        if (ring.type === 'Red') bonus = 100000;
+        if (ring.type === 'Gold') bonus = 1000000;
+        return acc + bonus;
+    }, 0);
+    this.state.attributes.combatPower = Math.floor(basePower + ringBonus);
+  }
+
   // Determine what happens next month
   nextMonth() {
+    this.updateCombatPower();
     this.state.month++;
     if (this.state.month > 12) {
       this.state.month = 1;
@@ -57,17 +75,29 @@ export class GameEngine {
     }
 
     // 1. Check for Story Triggers based on Year/Stats
-    if (this.state.year === 6 && this.state.month === 1 && !this.state.flags['awakened']) {
-       // Usually handled by start game flow, but just in case
+    // Iterate through all events to find Story events that trigger
+    const storyEvents = Object.values(EVENT_REGISTRY).filter(e => 
+        e.type === 'Story' && e.trigger && e.trigger(this.state)
+    );
+
+    if (storyEvents.length > 0) {
+        // Trigger the first valid story event (or handle priority if needed)
+        this.triggerEvent(storyEvents[0].id);
+        return;
     }
 
-    // 2. Check for Random Events based on Location
+    // 2. Check for Random Events
+    // 40% chance of a random event each month
     const roll = Math.random();
-    if (roll < 0.2) {
-        // 20% chance of random event
-        // Simplified: just one random event for now
-        if (this.state.currentLocation.includes('学院')) {
-            this.triggerEvent('MEET_XIAO_WU');
+    if (roll < 0.4) {
+        const potentialEvents = Object.values(EVENT_REGISTRY).filter(e => 
+            e.type !== 'Story' && e.trigger && e.trigger(this.state)
+        );
+
+        if (potentialEvents.length > 0) {
+            // Pick a random event from the potential list
+            const randomEvent = potentialEvents[Math.floor(Math.random() * potentialEvents.length)];
+            this.triggerEvent(randomEvent.id);
             return;
         }
     }
@@ -94,14 +124,19 @@ export class GameEngine {
   // Actions available in the UI
   cultivate() {
     // Check for bottlenecks
-    const rankCap = (Math.floor(this.state.attributes.rank / 10) + 1) * 10;
-    // e.g. Rank 10, 20, 30. 
-    // If spiritPower is high enough to reach next rank but we don't have enough rings
-    const requiredRings = Math.floor(this.state.attributes.rank / 10);
+    // Rank 10, 20, 30... require rings.
+    // If spiritPower is 10, 20, 30... AND spiritRings.length < rank/10, we are stuck.
     
-    if (this.state.attributes.spiritPower >= rankCap && this.state.spiritRings.length < requiredRings) {
+    // Calculate current max level based on rings
+    // 0 rings -> max 10
+    // 1 ring -> max 20
+    const maxLevel = (this.state.spiritRings.length + 1) * 10;
+    
+    if (this.state.attributes.spiritPower >= maxLevel) {
+        // Bottleneck reached!
         this.triggerEvent('CULTIVATION_BREAKTHROUGH');
     } else {
+        // Normal cultivation
         this.triggerEvent('CULTIVATION_NORMAL');
     }
     this.nextMonth();
@@ -123,6 +158,18 @@ export class GameEngine {
       this.state.attributes.health = Math.min(this.state.attributes.health + 20, this.state.attributes.maxHealth);
       this.state.log.unshift(`[Year ${this.state.year} Month ${this.state.month}] 你休息了几天，体力恢复了。`);
       this.nextMonth();
+  }
+
+  hunt() {
+      // Check if player needs a ring
+      const currentRingCount = this.state.spiritRings.length;
+      const maxLevel = (currentRingCount + 1) * 10;
+      
+      if (this.state.attributes.spiritPower >= maxLevel) {
+          this.triggerEvent('HUNT_SELECTION');
+      } else {
+          this.state.log.unshift(`[Year ${this.state.year} Month ${this.state.month}] 你目前的魂力还不需要猎取魂环。`);
+      }
   }
 }
 

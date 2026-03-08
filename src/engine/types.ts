@@ -3,6 +3,7 @@ export type Faction = 'Neutral' | 'Shrek' | 'SpiritHall';
 export interface CharacterAttributes {
   spiritPower: number; // 0-100 (Rank 100 = God)
   rank: number; // 1-99
+  combatPower: number; // Calculated based on stats and rings
   health: number;
   maxHealth: number;
   wealth: number; // Gold coins
@@ -20,6 +21,13 @@ export interface Relationship {
   description: string;
 }
 
+export interface SpiritRing {
+  name: string;
+  age: number;
+  skill: string;
+  type: 'White' | 'Yellow' | 'Purple' | 'Black' | 'Red' | 'Gold';
+}
+
 export interface GameState {
   year: number;
   month: number;
@@ -30,7 +38,7 @@ export interface GameState {
   relationships: Record<string, Relationship>;
   flags: Record<string, boolean>; // For story triggers
   inventory: string[];
-  spiritRings: string[];
+  spiritRings: SpiritRing[];
   currentLocation: string;
   faction: Faction;
   log: string[]; // History of actions
